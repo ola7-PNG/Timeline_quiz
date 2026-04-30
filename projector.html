@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Leaderboard — A Century of Live Music</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23141014'/%3E%3Ccircle cx='50' cy='50' r='18' fill='%234A148C'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%230A0A0A'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #0A0A0A;
+      --panel: #141014;
+      --deep-purple: #4A148C;
+      --mid-purple: #6D27A8;
+      --deep-purple-dark: #2D0857;
+      --lavender: #DDC9EA;
+      --lavender-light: #F0E8F8;
+      --text: #FFFFFF;
+      --text-muted: rgba(240, 232, 248, 0.65);
+      --gold: #FFD700;
+      --silver: #C0C0C0;
+      --bronze: #CD7F32;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: radial-gradient(ellipse at top, #1A0826 0%, #0A0510 50%, var(--bg) 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Stage lighting */
+    .stage-light {
+      position: fixed;
+      width: 900px;
+      height: 900px;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(120px);
+      z-index: 0;
+    }
+    .stage-light.l1 { background: var(--deep-purple); top: -300px; left: -200px; opacity: 0.25; animation: drift1 20s ease-in-out infinite; }
+    .stage-light.l2 { background: var(--mid-purple); top: -200px; right: -250px; opacity: 0.22; animation: drift2 24s ease-in-out infinite; }
+    .stage-light.l3 { background: var(--lavender); bottom: -300px; left: 35%; opacity: 0.12; animation: drift3 28s ease-in-out infinite; }
+    @keyframes drift1 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(120px,60px) scale(1.1);} }
+    @keyframes drift2 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-90px,90px) scale(1.15);} }
+    @keyframes drift3 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(60px,-60px) scale(1.05);} }
+
+    /* Decorative spinning vinyls in corners */
+    .vinyl-deco {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: vinyl-spin linear infinite;
+      background: radial-gradient(circle, var(--deep-purple) 0%, var(--deep-purple) 18%, #1a0a1f 19%, #0c0610 100%);
+      z-index: 0;
+    }
+    .vinyl-deco::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-radial-gradient(circle at center, transparent 0, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 5px);
+      mask: radial-gradient(circle, transparent 18%, black 19%);
+      -webkit-mask: radial-gradient(circle, transparent 18%, black 19%);
+    }
+    .vinyl-deco::after {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 8px; height: 8px;
+      background: var(--bg);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .vinyl-deco.tr { width: 240px; height: 240px; top: 40px; right: -80px; opacity: 0.45; animation-duration: 24s; }
+    .vinyl-deco.bl { width: 200px; height: 200px; bottom: 60px; left: -80px; opacity: 0.35; animation-duration: 30s; animation-direction: reverse; }
+    @keyframes vinyl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Equalizer bars at the very bottom */
+    .equalizer {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 90px;
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .equalizer .bar {
+      width: 6px;
+      background: linear-gradient(to top, var(--deep-purple), var(--lavender));
+      border-radius: 3px 3px 0 0;
+      animation: eq-bounce 1.2s ease-in-out infinite;
+    }
+    .equalizer .bar:nth-child(1) { animation-delay: 0s; }
+    .equalizer .bar:nth-child(2) { animation-delay: 0.1s; }
+    .equalizer .bar:nth-child(3) { animation-delay: 0.2s; }
+    .equalizer .bar:nth-child(4) { animation-delay: 0.3s; }
+    .equalizer .bar:nth-child(5) { animation-delay: 0.45s; }
+    .equalizer .bar:nth-child(6) { animation-delay: 0.6s; }
+    .equalizer .bar:nth-child(7) { animation-delay: 0.5s; }
+    .equalizer .bar:nth-child(8) { animation-delay: 0.35s; }
+    .equalizer .bar:nth-child(9) { animation-delay: 0.2s; }
+    .equalizer .bar:nth-child(10) { animation-delay: 0.1s; }
+    .equalizer .bar:nth-child(11) { animation-delay: 0s; }
+    .equalizer .bar:nth-child(12) { animation-delay: 0.15s; }
+    .equalizer .bar:nth-child(13) { animation-delay: 0.3s; }
+    .equalizer .bar:nth-child(14) { animation-delay: 0.45s; }
+    .equalizer .bar:nth-child(15) { animation-delay: 0.6s; }
+    @keyframes eq-bounce {
+      0%, 100% { height: 14px; }
+      50% { height: 75px; }
+    }
+
+    /* Main layout */
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 4vh 6vw 12vh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 3vh;
+      flex-shrink: 0;
+    }
+
+    .marquee {
+      font-size: clamp(13px, 1.2vw, 18px);
+      letter-spacing: 0.5em;
+      color: var(--lavender);
+      text-transform: uppercase;
+      margin-bottom: 0.6em;
+      animation: marquee-blink 2.5s ease-in-out infinite;
+    }
+    @keyframes marquee-blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+    h1.title {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(40px, 5vw, 76px);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    h1.title .accent {
+      font-style: italic;
+      background: linear-gradient(90deg, var(--lavender) 0%, var(--lavender-light) 25%, var(--mid-purple) 50%, var(--lavender-light) 75%, var(--lavender) 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 5s linear infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+
+    .subtitle {
+      font-size: clamp(13px, 1vw, 17px);
+      letter-spacing: 0.3em;
+      color: var(--lavender);
+      opacity: 0.75;
+      text-transform: uppercase;
+      margin-top: 0.8em;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: clamp(20px, 4vw, 60px);
+      margin: 2vh 0 3vh;
+      flex-shrink: 0;
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-family: Georgia, serif;
+      font-size: clamp(32px, 3.5vw, 56px);
+      color: var(--lavender);
+      line-height: 1;
+      transition: transform 0.3s ease;
+    }
+    .stat-num.bump { animation: stat-bump 0.6s ease; }
+    @keyframes stat-bump {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.15); color: var(--lavender-light); }
+      100% { transform: scale(1); color: var(--lavender); }
+    }
+    .stat-lbl {
+      font-size: clamp(10px, 0.75vw, 13px);
+      letter-spacing: 0.3em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 0.5em;
+    }
+
+    /* Leaderboard */
+    .leaderboard {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .lb-list {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 1vh, 14px);
+    }
+
+    .lb-row {
+      display: grid;
+      grid-template-columns: clamp(70px, 6vw, 100px) 1fr clamp(120px, 12vw, 180px);
+      gap: clamp(20px, 2vw, 32px);
+      align-items: center;
+      padding: clamp(14px, 1.6vh, 22px) clamp(20px, 2.5vw, 36px);
+      background: rgba(74,20,140,0.10);
+      border: 1px solid rgba(221,201,234,0.10);
+      border-radius: 14px;
+      transition: background 0.3s, border-color 0.3s, transform 0.3s;
+    }
+
+    /* Podium styling */
+    .lb-row.podium-1 {
+      background: linear-gradient(90deg, rgba(255,215,0,0.18), rgba(109,39,168,0.12));
+      border-color: rgba(255,215,0,0.4);
+      box-shadow: 0 0 40px rgba(255,215,0,0.15);
+    }
+    .lb-row.podium-2 {
+      background: linear-gradient(90deg, rgba(192,192,192,0.15), rgba(74,20,140,0.05));
+      border-color: rgba(192,192,192,0.35);
+    }
+    .lb-row.podium-3 {
+      background: linear-gradient(90deg, rgba(205,127,50,0.18), rgba(74,20,140,0.05));
+      border-color: rgba(205,127,50,0.35);
+    }
+
+    /* Just-arrived score animation */
+    .lb-row.just-in {
+      animation: just-in-flash 2.5s ease-out;
+    }
+    @keyframes just-in-flash {
+      0% {
+        transform: translateX(40px) scale(0.95);
+        opacity: 0;
+        background: rgba(221,201,234,0.4);
+        border-color: var(--lavender-light);
+        box-shadow: 0 0 80px rgba(221,201,234,0.5);
+      }
+      30% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        background: rgba(74,20,140,0.10);
+        border-color: rgba(221,201,234,0.10);
+        box-shadow: none;
+      }
+    }
+    .lb-row.podium-1.just-in,
+    .lb-row.podium-2.just-in,
+    .lb-row.podium-3.just-in {
+      /* Let podium colors take over after just-in fades */
+      animation: just-in-flash 2.5s ease-out, none;
+    }
+
+    /* Vinyl rank marker */
+    .lb-rank {
+      width: clamp(56px, 5vw, 80px);
+      height: clamp(56px, 5vw, 80px);
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle, var(--deep-purple) 0%, var(--deep-purple) 38%, #1a0a1f 39%, #0c0610 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: vinyl-spin 10s linear infinite;
+      box-shadow: inset 0 0 0 1px rgba(221,201,234,0.2);
+      flex-shrink: 0;
+    }
+    .lb-rank::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-radial-gradient(circle at center, transparent 0, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 3px);
+      mask: radial-gradient(circle, transparent 38%, black 39%);
+      -webkit-mask: radial-gradient(circle, transparent 38%, black 39%);
+    }
+    .lb-rank-num {
+      position: relative;
+      z-index: 1;
+      font-family: Georgia, serif;
+      font-size: clamp(20px, 1.8vw, 30px);
+      color: var(--lavender);
+      font-weight: 500;
+      animation: vinyl-spin 10s linear infinite reverse;
+    }
+    .lb-row.podium-1 .lb-rank-num { color: var(--gold); }
+    .lb-row.podium-2 .lb-rank-num { color: var(--silver); }
+    .lb-row.podium-3 .lb-rank-num { color: var(--bronze); }
+
+    .lb-info { overflow: hidden; }
+    .lb-name {
+      font-size: clamp(20px, 2.2vw, 36px);
+      color: var(--text);
+      font-weight: 500;
+      font-family: Georgia, serif;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+    .lb-row.podium-1 .lb-name { color: var(--lavender-light); }
+    .lb-meta {
+      font-size: clamp(11px, 0.9vw, 14px);
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 0.4em;
+    }
+    .lb-score {
+      font-family: Georgia, serif;
+      font-size: clamp(28px, 2.8vw, 44px);
+      color: var(--lavender);
+      font-weight: 500;
+      text-align: right;
+      line-height: 1;
+    }
+    .lb-row.podium-1 .lb-score { color: var(--gold); }
+    .lb-score-sub {
+      font-size: clamp(10px, 0.7vw, 12px);
+      color: var(--text-muted);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      margin-top: 0.4em;
+      font-family: -apple-system, sans-serif;
+    }
+
+    /* Empty state */
+    .lb-empty {
+      text-align: center;
+      padding: clamp(40px, 8vh, 100px) 20px;
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: clamp(18px, 1.6vw, 28px);
+      font-family: Georgia, serif;
+    }
+    .lb-empty .vinyl-large {
+      width: clamp(100px, 12vw, 180px);
+      height: clamp(100px, 12vw, 180px);
+      margin: 0 auto clamp(20px, 3vh, 40px);
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle, var(--deep-purple) 0%, var(--deep-purple) 38%, #1a0a1f 39%, #0c0610 100%);
+      animation: vinyl-spin 12s linear infinite;
+      box-shadow: 0 20px 60px rgba(74,20,140,0.5);
+    }
+    .lb-empty .vinyl-large::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-radial-gradient(circle at center, transparent 0, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 5px);
+      mask: radial-gradient(circle, transparent 38%, black 39%);
+      -webkit-mask: radial-gradient(circle, transparent 38%, black 39%);
+    }
+    .lb-empty .vinyl-large::after {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 12px; height: 12px;
+      background: var(--bg);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 2px var(--lavender);
+    }
+
+    /* Live indicator */
+    .live-indicator {
+      position: fixed;
+      top: clamp(20px, 3vh, 40px);
+      right: clamp(20px, 3vw, 40px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: rgba(74,20,140,0.4);
+      border: 1px solid rgba(221,201,234,0.3);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      z-index: 5;
+      font-size: clamp(11px, 0.8vw, 14px);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--lavender);
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #FF3B30;
+      border-radius: 50%;
+      animation: live-pulse 1.5s ease-in-out infinite;
+      box-shadow: 0 0 12px rgba(255,59,48,0.7);
+    }
+    .live-dot.connecting { background: var(--lavender); box-shadow: 0 0 12px rgba(221,201,234,0.6); }
+    .live-dot.error { background: #888; box-shadow: none; animation: none; }
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Connection status text */
+    .conn-status { font-family: -apple-system, sans-serif; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<div class="stage-light l1"></div>
+<div class="stage-light l2"></div>
+<div class="stage-light l3"></div>
+<div class="vinyl-deco tr"></div>
+<div class="vinyl-deco bl"></div>
+
+<div class="live-indicator">
+  <div class="live-dot connecting" id="live-dot"></div>
+  <span class="conn-status" id="conn-status">Connecting</span>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="marquee">— Live Leaderboard —</div>
+    <h1 class="title">A Century of <span class="accent">Live Music</span></h1>
+    <div class="subtitle">Top of the Charts · Updating in real time</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num" id="stat-players">0</div>
+      <div class="stat-lbl">Players</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="stat-top">0</div>
+      <div class="stat-lbl">Top Score</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="stat-avg">0</div>
+      <div class="stat-lbl">Avg Score</div>
+    </div>
+  </div>
+
+  <div class="leaderboard">
+    <div class="lb-list" id="lb-list">
+      <div class="lb-empty">
+        <div class="vinyl-large"></div>
+        <div>Drop the needle, take the quiz.</div>
+        <div style="margin-top: 1em; font-size: 0.7em; opacity: 0.7;">Scores will appear here as players finish.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="equalizer">
+  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, limit, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyANzdXuQnlO8O2p3jOxMR6a6AeCGr3WLrU",
+    authDomain: "timeline-quiz-62280.firebaseapp.com",
+    projectId: "timeline-quiz-62280",
+    storageBucket: "timeline-quiz-62280.firebasestorage.app",
+    messagingSenderId: "868710852642",
+    appId: "1:868710852642:web:d7964db31da885c2fc427b"
+  };
+
+  const TOP_N = 20; // how many rows to show on the projector
+
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db = getFirestore(app);
+
+  const liveDot = document.getElementById('live-dot');
+  const connStatus = document.getElementById('conn-status');
+  const listEl = document.getElementById('lb-list');
+  const statPlayers = document.getElementById('stat-players');
+  const statTop = document.getElementById('stat-top');
+  const statAvg = document.getElementById('stat-avg');
+
+  let lastIds = new Set(); // track rendered rows so we know which are "just-in"
+  let firstRender = true;
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function formatNum(n) { return Number(n).toLocaleString(); }
+
+  function bumpStat(el, newVal) {
+    if (el.textContent !== String(newVal)) {
+      el.textContent = newVal;
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
+    }
+  }
+
+  function render(scores) {
+    // Update stats
+    bumpStat(statPlayers, formatNum(scores.length));
+    if (scores.length > 0) {
+      bumpStat(statTop, formatNum(scores[0].score));
+      const avg = Math.round(scores.reduce((s, e) => s + e.score, 0) / scores.length);
+      bumpStat(statAvg, formatNum(avg));
+    } else {
+      bumpStat(statTop, '0');
+      bumpStat(statAvg, '0');
+    }
+
+    if (scores.length === 0) {
+      listEl.innerHTML = `
+        <div class="lb-empty">
+          <div class="vinyl-large"></div>
+          <div>Drop the needle, take the quiz.</div>
+          <div style="margin-top: 1em; font-size: 0.7em; opacity: 0.7;">Scores will appear here as players finish.</div>
+        </div>`;
+      return;
+    }
+
+    const newIds = new Set(scores.map(e => e.ts + '_' + e.name));
+    const html = scores.slice(0, TOP_N).map((entry, i) => {
+      const rank = i + 1;
+      const id = entry.ts + '_' + entry.name;
+      const podium = rank <= 3 ? `podium-${rank}` : '';
+      // Mark as "just-in" only if it's a brand-new entry (not on first load)
+      const justIn = (!firstRender && !lastIds.has(id)) ? 'just-in' : '';
+      const safeName = escapeHtml(entry.name);
+      return `
+        <div class="lb-row ${podium} ${justIn}">
+          <div class="lb-rank"><span class="lb-rank-num">${rank}</span></div>
+          <div class="lb-info">
+            <div class="lb-name">${safeName}</div>
+            <div class="lb-meta">${entry.correct}/10 correct</div>
+          </div>
+          <div>
+            <div class="lb-score">${formatNum(entry.score)}</div>
+            <div class="lb-score-sub">points</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    listEl.innerHTML = html;
+    lastIds = newIds;
+    firstRender = false;
+  }
+
+  function setStatus(state, text) {
+    liveDot.classList.remove('connecting', 'error');
+    if (state === 'connecting') liveDot.classList.add('connecting');
+    else if (state === 'error') liveDot.classList.add('error');
+    connStatus.textContent = text;
+  }
+
+  // Real-time subscription — updates the moment a new score is written.
+  const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(100));
+
+  onSnapshot(q,
+    (snap) => {
+      const scores = snap.docs.map(d => d.data());
+      render(scores);
+      setStatus('live', 'Live');
+    },
+    (err) => {
+      console.error("Firestore subscription error:", err);
+      setStatus('error', 'Offline');
+    }
+  );
+</script>
+
+</body>
+</html>
